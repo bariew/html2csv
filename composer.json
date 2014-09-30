@@ -1,0 +1,21 @@
+{
+    "name": "bariew/html2csv",
+    "description": "Converts HTML content to csv",
+    "type": "helper",
+    "keywords": ["php","helper","csv"],
+    "license": "BSD-4-Clause",
+    "authors": [
+        {
+            "name": "Bariev Pavel",
+            "email": "bariew@yandex.ru"
+        }
+    ],
+    "require": {
+        "bariew/phpquery": "dev-master"
+    },
+    "autoload": {
+        "psr-4": {
+            "bariew\\html2csv\\": ""
+        }
+    }
+}
