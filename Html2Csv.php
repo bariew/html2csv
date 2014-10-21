@@ -20,7 +20,7 @@ class Html2Csv
 
     public $cellDelimiter = ';';
     public $cellEnclosure = '"';
-    public $rowSelector = 'thead, tr';
+    public $rowSelector = 'tr';
     public $cellSelector = 'th, td';
 
 
@@ -34,10 +34,14 @@ class Html2Csv
 
     public function toArray()
     {
-        foreach($this->dom->find($this->rowSelector) as $key => $row) {
-            foreach (pq($row)->find($this->cellSelector) as $cell) {
-                $this->addEl(pq($cell), $key);
+        foreach($this->dom->find($this->rowSelector) as $rowKey => $row) {
+            foreach (pq($row)->find($this->cellSelector) as $colKey => $cell) {
+                $this->addEl(pq($cell), $rowKey, $colKey);
             }
+        }
+        foreach ($this->data as $key => $values) {
+            ksort($values);
+            $this->data[$key] = $values;
         }
         return $this;
     }
@@ -51,6 +55,7 @@ class Html2Csv
         header("Content-Disposition: attachment; filename={$fileName}");
         header("Pragma: no-cache");
         header("Expires: 0");
+        echo "\xEF\xBB\xBF";
         $output = fopen("php://output", "w");
         foreach ($this->data as $row) {
             fputcsv($output, $row, $this->cellDelimiter, $this->cellEnclosure);
@@ -58,18 +63,26 @@ class Html2Csv
         fclose($output);
     }
 
-    protected function addEl($el, $key)
+    protected function addEl($el, $rowKey, $colKey)
     {
         /**
          * @var \phpQueryObject $el
          */
         $rowspan = ($el->attr('rowspan') > 1) ? $el->attr('rowspan') : 1;
         $colspan = ($el->attr('colspan') > 1) ? $el->attr('colspan') : 1;
-        for ($i = 0; $i < $rowspan; $i++) {
-            $colKey = isset($this->data[$key+$i]) ? count($this->data[$key+$i]) : 0;
-            for ($j = 0; $j < $colspan; ++$j) {
-                $this->data[$key+$i][$colKey + $j] = (($j == floor($colspan/2)) && ($i == 0)) ? trim($el->text()) : '';
+        for ($row = 0; $row < $rowspan; $row++) {
+            while (isset($this->data[$rowKey+$row][$colKey])) {
+                $colKey++;
+            }
+            for ($col = 0; $col < $colspan; $col++) {
+                $this->data[$rowKey+$row][$colKey + $col] = (($col == 0) && ($row == 0))
+                    ? $this->prepareText($el->text()) : '';
             }
         }
+    }
+
+    protected function prepareText($string)
+    {
+        return trim($string);
     }
 } 
